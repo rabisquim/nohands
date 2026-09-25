@@ -28,6 +28,10 @@
     .main-btn.idle { background: var(--primary); color: #fff; }
     .main-btn.active { background: var(--rec); color: #fff; }
 
+    .vu-container { width: 100%; height: 42px; background: #0b1120; border: 1px solid #334155; border-radius: 8px; margin-bottom: 0.8rem; display: none; align-items: center; justify-content: center; padding: 4px 8px; overflow: hidden; transition: all 0.2s ease; }
+    .vu-container.active { display: flex; }
+    #vuMeter { width: 100%; height: 100%; display: block; }
+
     .util-btn { flex: 1; background: #334155; }
     .file-btn { flex: 1; background: #475569; }
     .info { text-align: center; color: var(--muted); font-size: 0.8rem; margin-top: 0.8rem; line-height: 1.4; }
@@ -52,6 +56,10 @@
     <div id="status" class="status">⏳ Verificando servidor...</div>
 
     <button id="recordBtn" class="main-btn idle" onclick="toggleRecording()">🎙️ Iniciar Gravação</button>
+
+    <div id="vuContainer" class="vu-container">
+      <canvas id="vuMeter" width="600" height="34"></canvas>
+    </div>
 
     <textarea id="output" placeholder="O texto aparecerá aqui. Clique aqui antes de gravar."></textarea>
 
@@ -90,12 +98,21 @@
     let mimeType = 'audio/webm';
     let serverOnline = false;
 
+    // === VU METER STATE ===
+    let audioCtx = null;
+    let analyserNode = null;
+    let visualizerSource = null;
+    let visualizerAnimId = null;
+
     const statusEl    = document.getElementById("status");
     const outputEl    = document.getElementById("output");
     const recordBtn   = document.getElementById("recordBtn");
     const serverUrlIn = document.getElementById("serverUrl");
     const serverDot   = document.getElementById("serverDot");
     const fileInput   = document.getElementById("fileInput");
+    const vuContainer = document.getElementById("vuContainer");
+    const vuCanvas    = document.getElementById("vuMeter");
+    const vuCtx       = vuCanvas ? vuCanvas.getContext("2d") : null;
 
     serverUrlIn.value = SERVER_URL;
 
@@ -176,6 +193,81 @@
       else if (appState === 'idle')  startRecording();
     }
 
+    // === AUDIO VISUALIZER (VU METER) ===
+    function initAudioVisualizer(audioStream) {
+      try {
+        window.AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!window.AudioContext) return;
+        audioCtx = new AudioContext();
+        analyserNode = audioCtx.createAnalyser();
+        analyserNode.fftSize = 64;
+        analyserNode.smoothingTimeConstant = 0.8;
+        visualizerSource = audioCtx.createMediaStreamSource(audioStream);
+        visualizerSource.connect(analyserNode);
+
+        if (vuContainer) vuContainer.classList.add("active");
+        drawAudioVisualizer();
+      } catch (err) {
+        console.warn("[VU Meter] Falha ao iniciar visualizador:", err);
+      }
+    }
+
+    function drawAudioVisualizer() {
+      if (!analyserNode || !vuCtx) return;
+      const bufferLength = analyserNode.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      analyserNode.getByteFrequencyData(dataArray);
+
+      vuCtx.clearRect(0, 0, vuCanvas.width, vuCanvas.height);
+      const barCount = 20;
+      const totalWidth = vuCanvas.width;
+      const barSpacing = 4;
+      const barWidth = (totalWidth - (barCount - 1) * barSpacing) / barCount;
+      const height = vuCanvas.height;
+
+      for (let i = 0; i < barCount; i++) {
+        const dataIdx = Math.floor(i * (bufferLength / barCount));
+        const val = dataArray[dataIdx] || 0;
+        const barHeight = Math.max(4, (val / 255) * height);
+        const x = i * (barWidth + barSpacing);
+        const y = height - barHeight;
+
+        const grad = vuCtx.createLinearGradient(0, height, 0, 0);
+        grad.addColorStop(0, "#10b981");
+        grad.addColorStop(0.6, "#3b82f6");
+        grad.addColorStop(1, "#ef4444");
+
+        vuCtx.fillStyle = grad;
+        vuCtx.beginPath();
+        if (typeof vuCtx.roundRect === "function") {
+          vuCtx.roundRect(x, y, barWidth, barHeight, 3);
+        } else {
+          vuCtx.rect(x, y, barWidth, barHeight);
+        }
+        vuCtx.fill();
+      }
+
+      visualizerAnimId = requestAnimationFrame(drawAudioVisualizer);
+    }
+
+    function stopAudioVisualizer() {
+      if (visualizerAnimId) {
+        cancelAnimationFrame(visualizerAnimId);
+        visualizerAnimId = null;
+      }
+      if (visualizerSource) {
+        try { visualizerSource.disconnect(); } catch (_) {}
+        visualizerSource = null;
+      }
+      if (audioCtx) {
+        try { audioCtx.close(); } catch (_) {}
+        audioCtx = null;
+      }
+      analyserNode = null;
+      if (vuContainer) vuContainer.classList.remove("active");
+      if (vuCtx) vuCtx.clearRect(0, 0, vuCanvas.width, vuCanvas.height);
+    }
+
     // === RECORDING ===
     async function startRecording() {
       try {
@@ -185,6 +277,7 @@
         mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunks.push(e.data); };
         mediaRecorder.onerror = (e) => { console.error(e); showError("❌ Erro interno do gravador."); };
         mediaRecorder.onstop = async () => {
+          stopAudioVisualizer();
           setState('transcribing');
           if (audioChunks.length === 0) { showError("⚠️ Nenhum áudio capturado."); return; }
           const blob = new Blob(audioChunks, { type: mimeType });
@@ -194,14 +287,17 @@
           setState('idle');
         };
         mediaRecorder.start(100);
+        initAudioVisualizer(stream);
         setState('recording');
       } catch (err) {
+        stopAudioVisualizer();
         console.error("[Audio] Falha:", err);
         showError("❌ Microfone bloqueado ou indisponível.");
       }
     }
 
     function stopRecording() {
+      stopAudioVisualizer();
       if (mediaRecorder && appState === 'recording' && mediaRecorder.state !== 'inactive') {
         mediaRecorder.stop();
       }
