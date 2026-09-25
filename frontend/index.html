@@ -77,7 +77,7 @@
 
   <script>
     // === CONFIG ===
-    let SERVER_URL = localStorage.getItem("parakeet_server_url") || "http://localhost:8765";
+    let SERVER_URL = localStorage.getItem("parakeet_server_url") || (window.location.origin.startsWith("http") ? window.location.origin : "http://localhost:8765");
     const TRANSCRIBE_PATH = "/transcribe";
     const HEALTH_PATH = "/health";
     const MAX_INLINE_BYTES = 25 * 1024 * 1024; // 25 MB — acima disso usa chunked
