@@ -11,10 +11,11 @@ Modelo: [`nvidia/parakeet-tdt-0.6b-v3`](https://huggingface.co/nvidia/parakeet-t
 
 ```
 parakeet-ditado/
-├── server.py          # Backend FastAPI que carrega o Parakeet V3
-├── index.html         # Frontend (browser) — fala com o backend
+├── server.py          # Backend FastAPI (carrega o Parakeet V3 e serve a UI)
+├── frontend/          # Interface web estática
+│   └── index.html     # Frontend (browser)
 ├── requirements.txt
-├── start.sh           # Script de start (cria venv, instala deps, sobe servidor)
+├── start.sh           # Script de start unificado (sobe servidor e abre navegador)
 └── README.md
 ```
 
@@ -51,27 +52,16 @@ chmod +x start.sh
 ./start.sh
 ```
 
-A primeira execução:
-1. Cria `.venv/`
-2. Instala `fastapi`, `uvicorn`, `onnx-asr`, `onnxruntime` (~250 MB total)
-3. Baixa o modelo Parakeet V3 do HuggingFace (~600 MB int8 / ~1.2 GB full)
-4. Sobe o servidor em `http://127.0.0.1:8765`
+O comando único `./start.sh`:
+1. Cria o `.venv/` e instala as dependências (se necessário)
+2. Sobe o servidor FastAPI unificado (backend e frontend) em `http://127.0.0.1:8765`
+3. Abre automaticamente a interface no navegador (se houver interface gráfica disponível)
 
-Nas próximas vezes é instantâneo (modelo fica em cache).
+> Caso esteja rodando sem interface gráfica ou em uma máquina remota, basta abrir **http://127.0.0.1:8765** no navegador. O status deve mostrar `✅ Servidor online • modelo nvidia/parakeet-tdt-0.6b-v3 (int8)`.
 
-### Abrir o frontend
-O `index.html` precisa ser servido via HTTP (não pode ser `file://`):
+A primeira execução baixa o modelo Parakeet V3 do HuggingFace (~600 MB int8 / ~1.2 GB full). Nas próximas vezes a inicialização é instantânea (modelo fica em cache).
 
-```bash
-# em outro terminal, dentro da pasta parakeet-ditado:
-python3 -m http.server 8080
-```
-
-Abra **http://localhost:8080/index.html** no navegador. O status deve mostrar
-`✅ Servidor online • modelo nvidia/parakeet-tdt-0.6b-v3 (int8)`.
-
-> Dica: se o backend estiver em outra máquina/porta, edite o campo de URL na
-> própria página (ele salva em `localStorage`).
+> Dica: se o backend estiver em outra máquina/porta, edite o campo de URL na própria página (ele salva em `localStorage`).
 
 ---
 

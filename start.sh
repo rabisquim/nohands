@@ -32,12 +32,23 @@ if [ ! -f ".venv/.deps_ok" ] || [ requirements.txt -nt .venv/.deps_ok ]; then
   touch .venv/.deps_ok
 fi
 
-# 4) Sobe o servidor.
+# 4) Sobe o servidor e abre o navegador se houver interface gráfica.
 PORT="${PORT:-8765}"
 HOST="${HOST:-127.0.0.1}"
+URL="http://${HOST}:${PORT}"
+
 echo
-echo "🚀 Iniciando Parakeet V3 em http://${HOST}:${PORT}"
-echo "   Abra o index.html pelo navegador (ex: cd . && python3 -m http.server 8080)"
-echo "   A 1ª execução baixa o modelo (~600MB int8 ou ~1.2GB full). Seja paciente."
+echo "🚀 Iniciando Parakeet V3 em ${URL}"
+echo "   Para acessar, abra ${URL} no seu navegador."
+echo "   Pressione Ctrl+C para encerrar."
 echo
+
+if command -v xdg-open >/dev/null 2>&1 && [ -n "${DISPLAY:-${WAYLAND_DISPLAY:-}}" ]; then
+  (
+    # Aguarda o servidor subir antes de abrir a aba
+    sleep 2
+    xdg-open "$URL" >/dev/null 2>&1 || true
+  ) &
+fi
+
 HOST="$HOST" PORT="$PORT" python server.py
