@@ -41,6 +41,21 @@
     .dot { width: 10px; height: 10px; border-radius: 50%; background: #64748b; display: inline-block; margin-right: 6px; }
     .dot.live { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
     .dot.dead { background: var(--rec); }
+
+    .history-section { margin-top: 1.2rem; border-top: 1px solid #334155; padding-top: 1rem; }
+    .history-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; margin-bottom: 0.6rem; }
+    .history-title { font-size: 0.95rem; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 0.4rem; }
+    .badge { background: #334155; color: var(--text); padding: 2px 7px; border-radius: 10px; font-size: 0.75rem; }
+    .history-actions { display: flex; gap: 0.4rem; }
+    .history-list { max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; padding-right: 4px; }
+    .history-list::-webkit-scrollbar { width: 6px; }
+    .history-list::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    .history-item { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 0.7rem; font-size: 0.9rem; }
+    .history-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; font-size: 0.75rem; color: var(--muted); }
+    .history-item-text { color: var(--text); line-height: 1.4; word-break: break-word; white-space: pre-wrap; margin-bottom: 0.5rem; }
+    .history-item-btns { display: flex; gap: 0.4rem; justify-content: flex-end; }
+    .btn-sm { padding: 3px 8px; font-size: 0.75rem; border-radius: 4px; background: #334155; }
+    .empty-history { text-align: center; color: var(--muted); font-size: 0.85rem; padding: 1rem; }
   </style>
 </head>
 <body>
@@ -74,6 +89,22 @@
         📁 Transcrever arquivo de áudio
         <input type="file" id="fileInput" accept="audio/*" style="display:none" />
       </label>
+    </div>
+
+    <div id="historySection" class="history-section">
+      <div class="history-header" onclick="toggleHistoryAccordion()">
+        <div class="history-title">
+          <span>📜 Histórico de Transcrições</span>
+          <span id="historyCount" class="badge">0</span>
+          <span id="historyToggleIcon">▼</span>
+        </div>
+        <div class="history-actions">
+          <button id="clearHistoryBtn" class="btn-sm" onclick="event.stopPropagation(); clearAllHistory();" title="Limpar todo o histórico">🧹 Limpar</button>
+        </div>
+      </div>
+      <div id="historyList" class="history-list">
+        <div class="empty-history">Nenhuma transcrição no histórico ainda.</div>
+      </div>
     </div>
 
     <p class="info">
@@ -339,6 +370,7 @@
       if (!text) { statusEl.textContent = "⚠️ Transcrição vazia (áudio sem fala?)."; return; }
       if (outputEl.value) outputEl.value += " ";
       outputEl.value += text;
+      addHistoryEntry(text);
       statusEl.textContent = "✅ Texto inserido com sucesso.";
     }
 
@@ -362,6 +394,152 @@
       statusEl.textContent = "💾 Baixado.";
     }
 
+    // === HISTORY ===
+    const HISTORY_STORAGE_KEY = "parakeet_transcription_history";
+    const MAX_HISTORY_ITEMS = 50;
+    let historyExpanded = true;
+
+    function toggleHistoryAccordion() {
+      historyExpanded = !historyExpanded;
+      const listEl = document.getElementById("historyList");
+      const iconEl = document.getElementById("historyToggleIcon");
+      if (listEl) listEl.style.display = historyExpanded ? "flex" : "none";
+      if (iconEl) iconEl.textContent = historyExpanded ? "▼" : "▶";
+    }
+
+    function loadHistory() {
+      try {
+        const raw = localStorage.getItem(HISTORY_STORAGE_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch (err) {
+        console.warn("[Histórico] Erro ao carregar histórico:", err);
+        return [];
+      }
+    }
+
+    function saveHistory(items) {
+      try {
+        const trimmed = items.slice(0, MAX_HISTORY_ITEMS);
+        localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(trimmed));
+      } catch (err) {
+        console.warn("[Histórico] Erro ao salvar histórico:", err);
+      }
+    }
+
+    function addHistoryEntry(text) {
+      const cleanText = (text || "").trim();
+      if (!cleanText) return;
+      const items = loadHistory();
+      const newEntry = {
+        id: "hist_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4),
+        timestamp: new Date().toISOString(),
+        text: cleanText
+      };
+      items.unshift(newEntry);
+      saveHistory(items);
+      renderHistory();
+    }
+
+    function deleteHistoryEntry(id) {
+      const items = loadHistory().filter(item => item.id !== id);
+      saveHistory(items);
+      renderHistory();
+    }
+
+    function clearAllHistory() {
+      const items = loadHistory();
+      if (items.length === 0) return;
+      if (confirm("Deseja realmente apagar todo o histórico de transcrições?")) {
+        localStorage.removeItem(HISTORY_STORAGE_KEY);
+        renderHistory();
+        statusEl.textContent = "🧹 Histórico apagado.";
+      }
+    }
+
+    async function copyHistoryText(id, btnElement) {
+      const items = loadHistory();
+      const target = items.find(item => item.id === id);
+      if (!target) return;
+      try {
+        await navigator.clipboard.writeText(target.text);
+        if (btnElement) {
+          const original = btnElement.textContent;
+          btnElement.textContent = "✅ Copiado!";
+          setTimeout(() => { btnElement.textContent = original; }, 1200);
+        }
+      } catch {
+        alert("Falha ao copiar texto do histórico.");
+      }
+    }
+
+    function insertHistoryText(id) {
+      const items = loadHistory();
+      const target = items.find(item => item.id === id);
+      if (!target) return;
+      if (outputEl.value) outputEl.value += " ";
+      outputEl.value += target.text;
+      statusEl.textContent = "➕ Texto anexado ao editor.";
+    }
+
+    function renderHistory() {
+      const listEl = document.getElementById("historyList");
+      const countEl = document.getElementById("historyCount");
+      if (!listEl || !countEl) return;
+
+      const items = loadHistory();
+      countEl.textContent = items.length;
+
+      if (items.length === 0) {
+        listEl.innerHTML = '<div class="empty-history">Nenhuma transcrição no histórico ainda.</div>';
+        return;
+      }
+
+      listEl.innerHTML = "";
+      items.forEach(item => {
+        const itemEl = document.createElement("div");
+        itemEl.className = "history-item";
+
+        const dateObj = new Date(item.timestamp);
+        const dateStr = isNaN(dateObj.getTime()) ? item.timestamp : dateObj.toLocaleString("pt-BR");
+
+        const headerEl = document.createElement("div");
+        headerEl.className = "history-item-header";
+        headerEl.innerHTML = `<span>🕒 ${dateStr}</span>`;
+
+        const textEl = document.createElement("div");
+        textEl.className = "history-item-text";
+        textEl.textContent = item.text;
+
+        const btnsEl = document.createElement("div");
+        btnsEl.className = "history-item-btns";
+
+        const copyBtn = document.createElement("button");
+        copyBtn.className = "btn-sm";
+        copyBtn.textContent = "📋 Copiar";
+        copyBtn.onclick = () => copyHistoryText(item.id, copyBtn);
+
+        const insertBtn = document.createElement("button");
+        insertBtn.className = "btn-sm";
+        insertBtn.textContent = "➕ Inserir";
+        insertBtn.onclick = () => insertHistoryText(item.id);
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.className = "btn-sm";
+        deleteBtn.textContent = "🗑️ Excluir";
+        deleteBtn.onclick = () => deleteHistoryEntry(item.id);
+
+        btnsEl.appendChild(copyBtn);
+        btnsEl.appendChild(insertBtn);
+        btnsEl.appendChild(deleteBtn);
+
+        itemEl.appendChild(headerEl);
+        itemEl.appendChild(textEl);
+        itemEl.appendChild(btnsEl);
+
+        listEl.appendChild(itemEl);
+      });
+    }
+
     // === HOTKEY ===
     document.addEventListener("keydown", (e) => {
       if (e.ctrlKey && e.shiftKey && e.code === "Space") {
@@ -372,6 +550,7 @@
 
     // === BOOT ===
     checkServer();
+    renderHistory();
   </script>
 </body>
 </html>
