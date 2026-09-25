@@ -437,28 +437,311 @@
       }
     }
 
-    .util-btn { flex: 1; background: var(--surface-elevated); border: 1px solid var(--border); color: var(--text); }
-    .util-btn:hover:not(:disabled) { background: var(--surface-hover); }
-    .file-btn { flex: 1; background: var(--surface-elevated); border: 1px solid var(--border); color: var(--text); }
-    .file-btn:hover { background: var(--surface-hover); }
+    /* Editor Card */
+    .editor-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 1.2rem;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    .editor-card:focus-within {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px var(--primary-glow), inset 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    .editor-card textarea#output {
+      width: 100%;
+      min-height: 180px;
+      padding: 1rem 1.1rem;
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      outline: none;
+      box-shadow: none;
+      color: var(--text);
+      font-size: 1rem;
+      line-height: 1.6;
+      resize: vertical;
+      font-family: inherit;
+      box-sizing: border-box;
+      margin-bottom: 0;
+    }
+    .editor-card textarea#output:focus {
+      outline: none;
+      border: none;
+      box-shadow: none;
+    }
+    .editor-card textarea#output::placeholder {
+      color: #475569;
+    }
+
+    /* Editor Toolbar */
+    .editor-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.6rem;
+      padding: 0.55rem 0.85rem;
+      background: var(--surface-elevated);
+      border-top: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+    .toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+    .tool-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.45rem 0.75rem;
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+      text-decoration: none;
+    }
+    .tool-btn:hover {
+      color: var(--text);
+      background: var(--surface-hover);
+      border-color: rgba(255, 255, 255, 0.16);
+      filter: none;
+    }
+    .tool-btn.danger:hover {
+      color: var(--rec);
+      background: rgba(239, 68, 68, 0.12);
+      border-color: rgba(239, 68, 68, 0.35);
+    }
+    .tool-btn.file-btn {
+      cursor: pointer;
+    }
+    .tool-icon {
+      width: 15px;
+      height: 15px;
+      flex-shrink: 0;
+    }
+    .counter {
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-feature-settings: "tnum";
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      user-select: none;
+      padding: 0.2rem 0.4rem;
+    }
+
+    /* Timeline History */
+    .history-section {
+      margin-top: 1.4rem;
+      border-top: 1px solid var(--border);
+      padding-top: 1.2rem;
+    }
+    .history-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+      margin-bottom: 0.9rem;
+    }
+    .history-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .history-header-icon {
+      width: 16px;
+      height: 16px;
+      color: var(--primary);
+      flex-shrink: 0;
+    }
+    .history-toggle-svg {
+      width: 14px;
+      height: 14px;
+      color: var(--muted);
+      transition: transform 0.2s ease;
+      flex-shrink: 0;
+    }
+    .history-toggle-svg.collapsed {
+      transform: rotate(-90deg);
+    }
+    .badge {
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      color: var(--primary);
+      padding: 1px 7px;
+      border-radius: 9999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .history-actions {
+      display: flex;
+      gap: 0.4rem;
+    }
+    .btn-sm {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.65rem;
+      font-size: 0.76rem;
+      font-weight: 500;
+      border-radius: 5px;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-sm:hover {
+      color: var(--text);
+      background: var(--surface-hover);
+      border-color: rgba(255, 255, 255, 0.16);
+      filter: none;
+    }
+    .btn-sm.danger-ghost:hover {
+      color: var(--rec);
+      background: rgba(239, 68, 68, 0.12);
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+    .history-list {
+      max-height: 280px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      padding: 0.2rem 0.4rem 0.4rem 1.4rem;
+      position: relative;
+    }
+    .history-list::-webkit-scrollbar {
+      width: 5px;
+    }
+    .history-list::-webkit-scrollbar-thumb {
+      background: var(--surface-hover);
+      border-radius: 3px;
+    }
+    .history-list::before {
+      content: "";
+      position: absolute;
+      left: 0.55rem;
+      top: 0.6rem;
+      bottom: 0.6rem;
+      width: 2px;
+      background: linear-gradient(180deg, var(--primary) 0%, rgba(56, 189, 248, 0.2) 80%, transparent 100%);
+      border-radius: 1px;
+    }
+    .history-item {
+      position: relative;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 0.75rem 0.9rem;
+      font-size: 0.9rem;
+      transition: border-color 0.2s ease, background 0.2s ease;
+    }
+    .history-item:hover {
+      border-color: rgba(56, 189, 248, 0.35);
+      background: var(--surface-hover);
+    }
+    .history-item::before {
+      content: "";
+      position: absolute;
+      left: -1.18rem;
+      top: 1.05rem;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--primary);
+      box-shadow: 0 0 6px var(--primary-glow);
+      border: 2px solid var(--bg);
+    }
+    .history-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.45rem;
+      font-size: 0.76rem;
+      color: var(--muted);
+    }
+    .history-time {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+    .history-time .icon-xs {
+      width: 12px;
+      height: 12px;
+      color: var(--primary);
+    }
+    .history-item-text {
+      color: var(--text);
+      line-height: 1.5;
+      word-break: break-word;
+      white-space: pre-wrap;
+      margin-bottom: 0.6rem;
+      font-size: 0.9rem;
+    }
+    .history-item-btns {
+      display: flex;
+      gap: 0.4rem;
+      justify-content: flex-end;
+      align-items: center;
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+      padding-top: 0.45rem;
+    }
+    .hist-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.3rem 0.6rem;
+      font-size: 0.74rem;
+      font-weight: 500;
+      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .hist-btn:hover {
+      color: var(--text);
+      background: var(--surface-hover);
+      border-color: rgba(255, 255, 255, 0.18);
+      filter: none;
+    }
+    .hist-btn.danger:hover {
+      color: var(--rec);
+      background: rgba(239, 68, 68, 0.12);
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+    .hist-btn .btn-icon, .btn-sm .btn-icon {
+      width: 13px;
+      height: 13px;
+      flex-shrink: 0;
+    }
+    .empty-history {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+      padding: 1.2rem 0.5rem;
+    }
     .info { text-align: center; color: var(--muted); font-size: 0.8rem; margin-top: 1rem; line-height: 1.5; }
     kbd, code { background: var(--surface-elevated); border: 1px solid var(--border); padding: 2px 6px; border-radius: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.8rem; color: var(--primary); }
-
-    .history-section { margin-top: 1.2rem; border-top: 1px solid var(--border); padding-top: 1rem; }
-    .history-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; margin-bottom: 0.6rem; }
-    .history-title { font-size: 0.95rem; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 0.4rem; }
-    .badge { background: var(--surface-elevated); border: 1px solid var(--border); color: var(--text); padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; }
-    .history-actions { display: flex; gap: 0.4rem; }
-    .history-list { max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; padding-right: 4px; }
-    .history-list::-webkit-scrollbar { width: 6px; }
-    .history-list::-webkit-scrollbar-thumb { background: var(--surface-hover); border-radius: 3px; }
-    .history-item { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 0.8rem; font-size: 0.9rem; }
-    .history-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; font-size: 0.75rem; color: var(--muted); }
-    .history-item-text { color: var(--text); line-height: 1.4; word-break: break-word; white-space: pre-wrap; margin-bottom: 0.5rem; }
-    .history-item-btns { display: flex; gap: 0.4rem; justify-content: flex-end; }
-    .btn-sm { padding: 4px 10px; font-size: 0.75rem; border-radius: 4px; background: var(--surface-elevated); border: 1px solid var(--border); color: var(--text); }
-    .btn-sm:hover { background: var(--surface-hover); }
-    .empty-history { text-align: center; color: var(--muted); font-size: 0.85rem; padding: 1rem; }
   </style>
 </head>
 <body>
@@ -512,30 +795,51 @@
       <canvas id="vuMeter" width="600" height="36"></canvas>
     </div>
 
-    <textarea id="output" placeholder="O texto aparecerá aqui. Clique aqui antes de gravar."></textarea>
-
-    <div class="row">
-      <button class="util-btn" onclick="clearOutput()">🗑️ Limpar</button>
-      <button class="util-btn" onclick="copyToClipboard()">📋 Copiar</button>
-      <button class="util-btn" onclick="downloadTxt()">💾 Baixar .txt</button>
-    </div>
-
-    <div class="row">
-      <label class="file-btn" style="display:flex;align-items:center;justify-content:center;padding:0.55rem 0.8rem;cursor:pointer;border-radius:6px;">
-        📁 Transcrever arquivo de áudio
-        <input type="file" id="fileInput" accept="audio/*" style="display:none" />
-      </label>
+    <div class="editor-card">
+      <textarea id="output" placeholder="O texto transcrito aparecerá aqui..."></textarea>
+      <div class="editor-toolbar">
+        <div class="toolbar-left">
+          <button class="tool-btn" onclick="copyToClipboard()" title="Copiar texto">
+            <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+            <span>Copiar</span>
+          </button>
+          <button class="tool-btn" onclick="downloadTxt()" title="Baixar .txt">
+            <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Baixar .txt</span>
+          </button>
+          <label class="tool-btn file-btn" title="Transcrever arquivo de áudio">
+            <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></svg>
+            <span>Subir Áudio</span>
+            <input type="file" id="fileInput" accept="audio/*" style="display:none" />
+          </label>
+          <button class="tool-btn danger" onclick="clearOutput()" title="Limpar editor">
+            <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+            <span>Limpar</span>
+          </button>
+        </div>
+        <div id="wordCharCount" class="counter">0 palavras • 0 caracteres</div>
+      </div>
     </div>
 
     <div id="historySection" class="history-section">
       <div class="history-header" onclick="toggleHistoryAccordion()">
         <div class="history-title">
-          <span>📜 Histórico de Transcrições</span>
+          <svg class="history-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+          <span>Histórico de Transcrições</span>
           <span id="historyCount" class="badge">0</span>
-          <span id="historyToggleIcon">▼</span>
+          <svg id="historyToggleIcon" class="history-toggle-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
         </div>
         <div class="history-actions">
-          <button id="clearHistoryBtn" class="btn-sm" onclick="event.stopPropagation(); clearAllHistory();" title="Limpar todo o histórico">🧹 Limpar</button>
+          <button id="clearHistoryBtn" class="btn-sm danger-ghost" onclick="event.stopPropagation(); clearAllHistory();" title="Limpar todo o histórico">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+            </svg>
+            <span>Limpar</span>
+          </button>
         </div>
       </div>
       <div id="historyList" class="history-list">
@@ -886,14 +1190,28 @@
       }
       if (outputEl.value) outputEl.value += " ";
       outputEl.value += text;
+      updateWordCharCount();
       addHistoryEntry(text);
       statusEl.textContent = "✅ Texto inserido com sucesso.";
       showToast("Transcrição concluída com sucesso!", "success");
     }
 
+    // === LIVE COUNTER ===
+    function updateWordCharCount() {
+      const text = outputEl.value.trim();
+      const chars = outputEl.value.length;
+      const words = text ? text.split(/\s+/).length : 0;
+      const counterEl = document.getElementById("wordCharCount");
+      if (counterEl) {
+        counterEl.textContent = `${words} ${words === 1 ? 'palavra' : 'palavras'} • ${chars} ${chars === 1 ? 'caractere' : 'caracteres'}`;
+      }
+    }
+    outputEl.addEventListener("input", updateWordCharCount);
+
     // === UTILS ===
     function clearOutput() {
       outputEl.value = "";
+      updateWordCharCount();
       statusEl.textContent = "🧹 Limpo.";
       showToast("Editor limpo.", "info");
     }
@@ -934,7 +1252,13 @@
       const listEl = document.getElementById("historyList");
       const iconEl = document.getElementById("historyToggleIcon");
       if (listEl) listEl.style.display = historyExpanded ? "flex" : "none";
-      if (iconEl) iconEl.textContent = historyExpanded ? "▼" : "▶";
+      if (iconEl) {
+        if (iconEl.classList.contains("history-toggle-svg")) {
+          iconEl.classList.toggle("collapsed", !historyExpanded);
+        } else {
+          iconEl.textContent = historyExpanded ? "▼" : "▶";
+        }
+      }
     }
 
     function loadHistory() {
@@ -998,9 +1322,12 @@
       try {
         await navigator.clipboard.writeText(target.text);
         if (btnElement) {
-          const original = btnElement.textContent;
-          btnElement.textContent = "✅ Copiado!";
-          setTimeout(() => { btnElement.textContent = original; }, 1200);
+          const original = btnElement.innerHTML;
+          btnElement.innerHTML = `
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Copiado!</span>
+          `;
+          setTimeout(() => { btnElement.innerHTML = original; }, 1200);
         }
         showToast("Texto copiado do histórico!", "success");
       } catch {
@@ -1014,6 +1341,7 @@
       if (!target) return;
       if (outputEl.value) outputEl.value += " ";
       outputEl.value += target.text;
+      updateWordCharCount();
       statusEl.textContent = "➕ Texto anexado ao editor.";
       showToast("Texto inserido no editor.", "info");
     }
@@ -1037,13 +1365,29 @@
         itemEl.className = "history-item";
 
         const dateObj = new Date(item.timestamp);
-        const dateStr = isNaN(dateObj.getTime()) ? item.timestamp : dateObj.toLocaleString("pt-BR");
+        const dateStr = isNaN(dateObj.getTime()) ? item.timestamp : dateObj.toLocaleString("pt-BR", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit"
+        });
 
         const headerEl = document.createElement("div");
         headerEl.className = "history-item-header";
+
+        const timeWrap = document.createElement("div");
+        timeWrap.className = "history-time";
+        timeWrap.innerHTML = `
+          <svg class="icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+        `;
         const dateSpan = document.createElement("span");
-        dateSpan.textContent = `🕒 ${dateStr}`;
-        headerEl.appendChild(dateSpan);
+        dateSpan.textContent = dateStr;
+        timeWrap.appendChild(dateSpan);
+        headerEl.appendChild(timeWrap);
 
         const textEl = document.createElement("div");
         textEl.className = "history-item-text";
@@ -1053,18 +1397,30 @@
         btnsEl.className = "history-item-btns";
 
         const copyBtn = document.createElement("button");
-        copyBtn.className = "btn-sm";
-        copyBtn.textContent = "📋 Copiar";
+        copyBtn.className = "hist-btn";
+        copyBtn.title = "Copiar texto";
+        copyBtn.innerHTML = `
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+          <span>Copiar</span>
+        `;
         copyBtn.onclick = () => copyHistoryText(item.id, copyBtn);
 
         const insertBtn = document.createElement("button");
-        insertBtn.className = "btn-sm";
-        insertBtn.textContent = "➕ Inserir";
+        insertBtn.className = "hist-btn";
+        insertBtn.title = "Inserir no editor";
+        insertBtn.innerHTML = `
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span>Inserir</span>
+        `;
         insertBtn.onclick = () => insertHistoryText(item.id);
 
         const deleteBtn = document.createElement("button");
-        deleteBtn.className = "btn-sm";
-        deleteBtn.textContent = "🗑️ Excluir";
+        deleteBtn.className = "hist-btn danger";
+        deleteBtn.title = "Excluir transcrição";
+        deleteBtn.innerHTML = `
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+          <span>Excluir</span>
+        `;
         deleteBtn.onclick = () => deleteHistoryEntry(item.id);
 
         btnsEl.appendChild(copyBtn);
@@ -1090,6 +1446,7 @@
     // === BOOT ===
     checkServer();
     renderHistory();
+    updateWordCharCount();
   </script>
   <div id="toastContainer" class="toast-container"></div>
 </body>
