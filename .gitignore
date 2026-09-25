@@ -36,3 +36,7 @@ models/
 *.swo
 .DS_Store
 Thumbs.db
+
+# Superpowers scratch & ledger
+.superpowers/
+
