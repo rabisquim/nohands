@@ -5,70 +5,302 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ditado por Voz (Local + Parakeet V3)</title>
   <style>
-    :root { --bg: #0f172a; --card: #1e293b; --primary: #3b82f6; --rec: #ef4444; --ok: #10b981; --text: #e2e8f0; --muted: #94a3b8; }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
-    body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem; }
-    .container { background: var(--card); padding: 1.5rem; border-radius: 12px; width: 100%; max-width: 650px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
-    h1 { font-size: 1.4rem; margin-bottom: 0.8rem; text-align: center; }
-    .status { text-align: center; padding: 0.6rem; margin-bottom: 1rem; border-radius: 6px; background: #334155; font-weight: 500; transition: 0.2s; font-size: 0.95rem; }
-    .status.rec { background: var(--rec); color: #fff; animation: pulse 1.5s infinite; }
-    .status.ok { background: var(--ok); color: #04221a; }
-    .status.err { background: #7f1d1d; color: #fee2e2; }
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
-    textarea { width: 100%; height: 180px; padding: 0.8rem; background: #0f172a; border: 1px solid #334155; border-radius: 8px; color: var(--text); font-size: 1rem; resize: vertical; margin-bottom: 0.8rem; }
-    textarea:focus { outline: 2px solid var(--primary); border-color: transparent; }
+    :root {
+      --bg: #07090e;
+      --surface: #0e1322;
+      --surface-elevated: #141c30;
+      --surface-hover: #1c2744;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-focus: rgba(56, 189, 248, 0.4);
+      --primary: #38bdf8;
+      --primary-glow: rgba(56, 189, 248, 0.25);
+      --rec: #ef4444;
+      --rec-glow: rgba(239, 68, 68, 0.35);
+      --ok: #10b981;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0;
+      margin: 0;
+    }
+
+    /* Topbar */
+    .topbar {
+      width: 100%;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.5rem;
+      background: rgba(14, 19, 34, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      user-select: none;
+    }
+    .brand-icon {
+      width: 22px;
+      height: 22px;
+      color: var(--primary);
+    }
+    .brand-name {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+    .brand-tag {
+      font-size: 0.72rem;
+      font-weight: 500;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      background: var(--surface-elevated);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      margin-left: 0.3rem;
+      letter-spacing: 0.02em;
+    }
+    .topbar-actions {
+      position: relative;
+    }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.45rem 0.85rem;
+      border-radius: 9999px;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .status-pill:hover {
+      background: var(--surface-hover);
+      border-color: var(--border-focus);
+      box-shadow: 0 0 12px var(--primary-glow);
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #64748b;
+      display: inline-block;
+      transition: all 0.2s ease;
+    }
+    .dot.live {
+      background: var(--ok);
+      box-shadow: 0 0 8px var(--ok);
+    }
+    .dot.dead {
+      background: var(--rec);
+      box-shadow: 0 0 8px var(--rec);
+    }
+    .icon-sm {
+      width: 14px;
+      height: 14px;
+      color: var(--muted);
+      transition: transform 0.2s ease;
+    }
+    .status-pill:hover .icon-sm {
+      color: var(--text);
+      transform: rotate(45deg);
+    }
+
+    /* Popover */
+    .popover {
+      position: absolute;
+      top: calc(100% + 10px);
+      right: 0;
+      width: 340px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.1rem;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.65), 0 0 0 1px var(--border);
+      display: none;
+      flex-direction: column;
+      gap: 0.8rem;
+      z-index: 200;
+      animation: popoverFadeIn 0.15s ease-out;
+    }
+    .popover.open {
+      display: flex;
+    }
+    @keyframes popoverFadeIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .popover-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .popover .server-row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      margin-bottom: 0;
+    }
+    .popover input {
+      flex: 1;
+      padding: 0.45rem 0.7rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 0.85rem;
+    }
+    .popover input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px var(--primary-glow);
+    }
+    .btn-primary-sm {
+      padding: 0.45rem 0.85rem;
+      border-radius: 6px;
+      border: none;
+      background: var(--primary);
+      color: #07090e;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .btn-primary-sm:hover {
+      filter: brightness(1.1);
+      box-shadow: 0 0 10px var(--primary-glow);
+    }
+    .status-detail, .status {
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.4;
+      padding: 0.5rem 0.7rem;
+      border-radius: 6px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      word-break: break-word;
+    }
+    .status-detail.ok, .status.ok {
+      color: var(--ok);
+      border-color: rgba(16, 185, 129, 0.25);
+    }
+    .status-detail.err, .status.err {
+      color: var(--rec);
+      border-color: rgba(239, 68, 68, 0.25);
+    }
+    .status-detail.rec, .status.rec {
+      color: #fff;
+      background: var(--rec);
+      border-color: var(--rec);
+    }
+
+    .container {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 1.8rem;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 680px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.5);
+      margin: 2rem 1rem;
+    }
+    h1 { font-size: 1.35rem; margin-bottom: 1.2rem; text-align: center; font-weight: 600; letter-spacing: -0.01em; }
+    textarea { width: 100%; height: 180px; padding: 0.85rem; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 1rem; resize: vertical; margin-bottom: 0.8rem; }
+    textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-glow); }
     .row { display: flex; gap: 0.5rem; margin-bottom: 0.6rem; flex-wrap: wrap; }
-    input, button { padding: 0.5rem 0.8rem; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: var(--text); font-size: 0.9rem; }
+    input, button { padding: 0.5rem 0.8rem; border-radius: 6px; border: 1px solid var(--border); background: var(--surface-elevated); color: var(--text); font-size: 0.9rem; }
     input { flex: 1; }
     button { cursor: pointer; border: none; font-weight: 600; transition: 0.15s; }
     button:hover:not(:disabled) { filter: brightness(1.1); }
-    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    .main-btn { width: 100%; padding: 0.7rem; font-size: 1.05rem; margin-bottom: 0.8rem; }
-    .main-btn.idle { background: var(--primary); color: #fff; }
-    .main-btn.active { background: var(--rec); color: #fff; }
+    .main-btn { width: 100%; padding: 0.8rem; font-size: 1.05rem; margin-bottom: 0.8rem; border-radius: 8px; font-weight: 600; }
+    .main-btn.idle { background: var(--primary); color: #07090e; box-shadow: 0 4px 14px var(--primary-glow); }
+    .main-btn.active { background: var(--rec); color: #fff; box-shadow: 0 4px 14px var(--rec-glow); }
 
-    .vu-container { width: 100%; height: 42px; background: #0b1120; border: 1px solid #334155; border-radius: 8px; margin-bottom: 0.8rem; display: none; align-items: center; justify-content: center; padding: 4px 8px; overflow: hidden; transition: all 0.2s ease; }
+    .vu-container { width: 100%; height: 42px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 0.8rem; display: none; align-items: center; justify-content: center; padding: 4px 8px; overflow: hidden; transition: all 0.2s ease; }
     .vu-container.active { display: flex; }
     #vuMeter { width: 100%; height: 100%; display: block; }
 
-    .util-btn { flex: 1; background: #334155; }
-    .file-btn { flex: 1; background: #475569; }
-    .info { text-align: center; color: var(--muted); font-size: 0.8rem; margin-top: 0.8rem; line-height: 1.4; }
-    kbd, code { background: #334155; padding: 2px 5px; border-radius: 4px; font-family: monospace; font-size: 0.8rem; }
-    .server-row { display: flex; gap: 0.5rem; margin-bottom: 0.8rem; align-items: center; }
-    .server-row input { flex: 1; }
-    .dot { width: 10px; height: 10px; border-radius: 50%; background: #64748b; display: inline-block; margin-right: 6px; }
-    .dot.live { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
-    .dot.dead { background: var(--rec); }
+    .util-btn { flex: 1; background: var(--surface-elevated); border: 1px solid var(--border); color: var(--text); }
+    .util-btn:hover:not(:disabled) { background: var(--surface-hover); }
+    .file-btn { flex: 1; background: var(--surface-elevated); border: 1px solid var(--border); color: var(--text); }
+    .file-btn:hover { background: var(--surface-hover); }
+    .info { text-align: center; color: var(--muted); font-size: 0.8rem; margin-top: 1rem; line-height: 1.5; }
+    kbd, code { background: var(--surface-elevated); border: 1px solid var(--border); padding: 2px 6px; border-radius: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.8rem; color: var(--primary); }
 
-    .history-section { margin-top: 1.2rem; border-top: 1px solid #334155; padding-top: 1rem; }
+    .history-section { margin-top: 1.2rem; border-top: 1px solid var(--border); padding-top: 1rem; }
     .history-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; margin-bottom: 0.6rem; }
     .history-title { font-size: 0.95rem; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 0.4rem; }
-    .badge { background: #334155; color: var(--text); padding: 2px 7px; border-radius: 10px; font-size: 0.75rem; }
+    .badge { background: var(--surface-elevated); border: 1px solid var(--border); color: var(--text); padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; }
     .history-actions { display: flex; gap: 0.4rem; }
     .history-list { max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; padding-right: 4px; }
     .history-list::-webkit-scrollbar { width: 6px; }
-    .history-list::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
-    .history-item { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 0.7rem; font-size: 0.9rem; }
+    .history-list::-webkit-scrollbar-thumb { background: var(--surface-hover); border-radius: 3px; }
+    .history-item { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 0.8rem; font-size: 0.9rem; }
     .history-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; font-size: 0.75rem; color: var(--muted); }
     .history-item-text { color: var(--text); line-height: 1.4; word-break: break-word; white-space: pre-wrap; margin-bottom: 0.5rem; }
     .history-item-btns { display: flex; gap: 0.4rem; justify-content: flex-end; }
-    .btn-sm { padding: 3px 8px; font-size: 0.75rem; border-radius: 4px; background: #334155; }
+    .btn-sm { padding: 4px 10px; font-size: 0.75rem; border-radius: 4px; background: var(--surface-elevated); border: 1px solid var(--border); color: var(--text); }
+    .btn-sm:hover { background: var(--surface-hover); }
     .empty-history { text-align: center; color: var(--muted); font-size: 0.85rem; padding: 1rem; }
   </style>
 </head>
 <body>
+  <header class="topbar">
+    <div class="brand">
+      <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"/>
+      </svg>
+      <span class="brand-name">nohands</span>
+      <span class="brand-tag">local speech studio</span>
+    </div>
+    
+    <div class="topbar-actions">
+      <button id="settingsBtn" class="status-pill" onclick="toggleSettingsPopover()">
+        <span class="dot" id="serverDot"></span>
+        <span id="statusShort">Verificando...</span>
+        <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+
+      <div id="settingsPopover" class="popover">
+        <div class="popover-title">Conexão do Servidor</div>
+        <div class="server-row">
+          <input type="text" id="serverUrl" value="http://localhost:8765" placeholder="http://localhost:8765" />
+          <button onclick="checkServer()" id="checkBtn" class="btn-primary-sm">Conectar</button>
+        </div>
+        <div id="status" class="status-detail">Verificando backend...</div>
+      </div>
+    </div>
+  </header>
+
   <div class="container">
     <h1>🎙️ Ditador por Voz — Local (Parakeet V3)</h1>
-
-    <div class="server-row">
-      <span class="dot" id="serverDot" title="Status do servidor"></span>
-      <input type="text" id="serverUrl" value="http://localhost:8765" placeholder="URL do backend (ex: http://localhost:8765)" />
-      <button onclick="checkServer()" id="checkBtn" class="util-btn" style="flex:0 0 auto;">🔌 Testar</button>
-    </div>
-
-    <div id="status" class="status">⏳ Verificando servidor...</div>
 
     <button id="recordBtn" class="main-btn idle" onclick="toggleRecording()">🎙️ Iniciar Gravação</button>
 
@@ -135,15 +367,16 @@
     let visualizerSource = null;
     let visualizerAnimId = null;
 
-    const statusEl    = document.getElementById("status");
-    const outputEl    = document.getElementById("output");
-    const recordBtn   = document.getElementById("recordBtn");
-    const serverUrlIn = document.getElementById("serverUrl");
-    const serverDot   = document.getElementById("serverDot");
-    const fileInput   = document.getElementById("fileInput");
-    const vuContainer = document.getElementById("vuContainer");
-    const vuCanvas    = document.getElementById("vuMeter");
-    const vuCtx       = vuCanvas ? vuCanvas.getContext("2d") : null;
+    const statusEl      = document.getElementById("status");
+    const statusShortEl = document.getElementById("statusShort");
+    const outputEl      = document.getElementById("output");
+    const recordBtn     = document.getElementById("recordBtn");
+    const serverUrlIn   = document.getElementById("serverUrl");
+    const serverDot     = document.getElementById("serverDot");
+    const fileInput     = document.getElementById("fileInput");
+    const vuContainer   = document.getElementById("vuContainer");
+    const vuCanvas      = document.getElementById("vuMeter");
+    const vuCtx         = vuCanvas ? vuCanvas.getContext("2d") : null;
 
     serverUrlIn.value = SERVER_URL;
 
@@ -155,13 +388,29 @@
     }
     mimeType = detectMime();
 
+    // === POPOVER ===
+    function toggleSettingsPopover() {
+      const popover = document.getElementById("settingsPopover");
+      if (popover) popover.classList.toggle("open");
+    }
+
+    // Fecha o popover ao clicar fora
+    document.addEventListener("click", (e) => {
+      const popover = document.getElementById("settingsPopover");
+      const btn = document.getElementById("settingsBtn");
+      if (popover && btn && !popover.contains(e.target) && !btn.contains(e.target)) {
+        popover.classList.remove("open");
+      }
+    });
+
     // === SERVER CHECK ===
     async function checkServer() {
       SERVER_URL = serverUrlIn.value.trim().replace(/\/+$/, "");
       localStorage.setItem("parakeet_server_url", SERVER_URL);
       serverUrlIn.value = SERVER_URL;
-      statusEl.className = "status";
+      statusEl.className = "status-detail";
       statusEl.textContent = "⏳ Conectando ao servidor...";
+      if (statusShortEl) statusShortEl.textContent = "Conectando...";
       try {
         const r = await fetch(SERVER_URL + HEALTH_PATH, { cache: "no-store" });
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -169,16 +418,18 @@
         serverOnline = info.status === "ok";
         if (serverOnline) {
           serverDot.className = "dot live";
-          statusEl.className = "status ok";
+          statusEl.className = "status-detail ok";
           statusEl.textContent = `✅ Servidor online • modelo ${info.model}${info.quantization ? ` (${info.quantization})` : ""} • providers: ${(info.providers || []).join(", ")}`;
+          if (statusShortEl) statusShortEl.textContent = "Parakeet V3 Ready";
         } else {
           throw new Error("modelo carregando");
         }
       } catch (err) {
         serverOnline = false;
         serverDot.className = "dot dead";
-        statusEl.className = "status err";
+        statusEl.className = "status-detail err";
         statusEl.textContent = `❌ Servidor offline em ${SERVER_URL}. Rode: python server.py`;
+        if (statusShortEl) statusShortEl.textContent = "Offline";
       }
     }
 
