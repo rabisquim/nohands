@@ -1,0 +1,12 @@
+# Backend de transcrição local com Parakeet V3
+# Requer Python 3.10+
+
+# Web framework
+fastapi>=0.110
+uvicorn[standard]>=0.27
+python-multipart>=0.0.9
+
+# ASR (ONNX Runtime + Hub p/ baixar o modelo do HuggingFace)
+# [cpu,hub] = onnxruntime (CPU) + huggingface_hub
+# Se tiver GPU NVIDIA, troque p/ onnxruntime-gpu (ver README)
+onnx-asr[cpu,hub]>=0.7

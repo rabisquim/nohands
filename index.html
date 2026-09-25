@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ditado por Voz (Local + Parakeet V3)</title>
+  <style>
+    :root { --bg: #0f172a; --card: #1e293b; --primary: #3b82f6; --rec: #ef4444; --ok: #10b981; --text: #e2e8f0; --muted: #94a3b8; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+    .container { background: var(--card); padding: 1.5rem; border-radius: 12px; width: 100%; max-width: 650px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
+    h1 { font-size: 1.4rem; margin-bottom: 0.8rem; text-align: center; }
+    .status { text-align: center; padding: 0.6rem; margin-bottom: 1rem; border-radius: 6px; background: #334155; font-weight: 500; transition: 0.2s; font-size: 0.95rem; }
+    .status.rec { background: var(--rec); color: #fff; animation: pulse 1.5s infinite; }
+    .status.ok { background: var(--ok); color: #04221a; }
+    .status.err { background: #7f1d1d; color: #fee2e2; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+    textarea { width: 100%; height: 180px; padding: 0.8rem; background: #0f172a; border: 1px solid #334155; border-radius: 8px; color: var(--text); font-size: 1rem; resize: vertical; margin-bottom: 0.8rem; }
+    textarea:focus { outline: 2px solid var(--primary); border-color: transparent; }
+    .row { display: flex; gap: 0.5rem; margin-bottom: 0.6rem; flex-wrap: wrap; }
+    input, button { padding: 0.5rem 0.8rem; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: var(--text); font-size: 0.9rem; }
+    input { flex: 1; }
+    button { cursor: pointer; border: none; font-weight: 600; transition: 0.15s; }
+    button:hover:not(:disabled) { filter: brightness(1.1); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .main-btn { width: 100%; padding: 0.7rem; font-size: 1.05rem; margin-bottom: 0.8rem; }
+    .main-btn.idle { background: var(--primary); color: #fff; }
+    .main-btn.active { background: var(--rec); color: #fff; }
+
+    .util-btn { flex: 1; background: #334155; }
+    .file-btn { flex: 1; background: #475569; }
+    .info { text-align: center; color: var(--muted); font-size: 0.8rem; margin-top: 0.8rem; line-height: 1.4; }
+    kbd, code { background: #334155; padding: 2px 5px; border-radius: 4px; font-family: monospace; font-size: 0.8rem; }
+    .server-row { display: flex; gap: 0.5rem; margin-bottom: 0.8rem; align-items: center; }
+    .server-row input { flex: 1; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: #64748b; display: inline-block; margin-right: 6px; }
+    .dot.live { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+    .dot.dead { background: var(--rec); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎙️ Ditador por Voz — Local (Parakeet V3)</h1>
+
+    <div class="server-row">
+      <span class="dot" id="serverDot" title="Status do servidor"></span>
+      <input type="text" id="serverUrl" value="http://localhost:8765" placeholder="URL do backend (ex: http://localhost:8765)" />
+      <button onclick="checkServer()" id="checkBtn" class="util-btn" style="flex:0 0 auto;">🔌 Testar</button>
+    </div>
+
+    <div id="status" class="status">⏳ Verificando servidor...</div>
+
+    <button id="recordBtn" class="main-btn idle" onclick="toggleRecording()">🎙️ Iniciar Gravação</button>
+
+    <textarea id="output" placeholder="O texto aparecerá aqui. Clique aqui antes de gravar."></textarea>
+
+    <div class="row">
+      <button class="util-btn" onclick="clearOutput()">🗑️ Limpar</button>
+      <button class="util-btn" onclick="copyToClipboard()">📋 Copiar</button>
+      <button class="util-btn" onclick="downloadTxt()">💾 Baixar .txt</button>
+    </div>
+
+    <div class="row">
+      <label class="file-btn" style="display:flex;align-items:center;justify-content:center;padding:0.55rem 0.8rem;cursor:pointer;border-radius:6px;">
+        📁 Transcrever arquivo de áudio
+        <input type="file" id="fileInput" accept="audio/*" style="display:none" />
+      </label>
+    </div>
+
+    <p class="info">
+      Atalho: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Espaço</kbd> faz a mesma coisa do botão.<br>
+      Modelo: <code>nvidia/parakeet-tdt-0.6b-v3</code> (multilíngue, 25 idiomas, suporta PT-BR).<br>
+      ⚠️ <strong>Importante:</strong> abra esta página via <code>http://localhost</code> (não clique duas vezes no arquivo).
+    </p>
+  </div>
+
+  <script>
+    // === CONFIG ===
+    let SERVER_URL = localStorage.getItem("parakeet_server_url") || "http://localhost:8765";
+    const TRANSCRIBE_PATH = "/transcribe";
+    const HEALTH_PATH = "/health";
+    const MAX_INLINE_BYTES = 25 * 1024 * 1024; // 25 MB — acima disso usa chunked
+
+    // === STATE ===
+    let appState = 'idle';          // idle | recording | transcribing
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let stream = null;
+    let mimeType = 'audio/webm';
+    let serverOnline = false;
+
+    const statusEl    = document.getElementById("status");
+    const outputEl    = document.getElementById("output");
+    const recordBtn   = document.getElementById("recordBtn");
+    const serverUrlIn = document.getElementById("serverUrl");
+    const serverDot   = document.getElementById("serverDot");
+    const fileInput   = document.getElementById("fileInput");
+
+    serverUrlIn.value = SERVER_URL;
+
+    // === MIME DETECT ===
+    function detectMime() {
+      const types = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/ogg', 'audio/mp4'];
+      for (const t of types) if (MediaRecorder.isTypeSupported(t)) return t;
+      return 'audio/webm';
+    }
+    mimeType = detectMime();
+
+    // === SERVER CHECK ===
+    async function checkServer() {
+      SERVER_URL = serverUrlIn.value.trim().replace(/\/+$/, "");
+      localStorage.setItem("parakeet_server_url", SERVER_URL);
+      serverUrlIn.value = SERVER_URL;
+      statusEl.className = "status";
+      statusEl.textContent = "⏳ Conectando ao servidor...";
+      try {
+        const r = await fetch(SERVER_URL + HEALTH_PATH, { cache: "no-store" });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const info = await r.json();
+        serverOnline = info.status === "ok";
+        if (serverOnline) {
+          serverDot.className = "dot live";
+          statusEl.className = "status ok";
+          statusEl.textContent = `✅ Servidor online • modelo ${info.model}${info.quantization ? ` (${info.quantization})` : ""} • providers: ${(info.providers || []).join(", ")}`;
+        } else {
+          throw new Error("modelo carregando");
+        }
+      } catch (err) {
+        serverOnline = false;
+        serverDot.className = "dot dead";
+        statusEl.className = "status err";
+        statusEl.textContent = `❌ Servidor offline em ${SERVER_URL}. Rode: python server.py`;
+      }
+    }
+
+    // === STATE MACHINE ===
+    function setState(newState) {
+      appState = newState;
+      switch (newState) {
+        case 'idle':
+          recordBtn.textContent = "🎙️ Iniciar Gravação";
+          recordBtn.className = "main-btn idle";
+          recordBtn.disabled = !serverOnline;
+          statusEl.classList.remove("rec");
+          if (statusEl.textContent.includes("Gravando") || statusEl.textContent.includes("Processando")) {
+            if (serverOnline) {
+              statusEl.className = "status ok";
+              statusEl.textContent = "✅ Pronto.";
+            }
+          }
+          break;
+        case 'recording':
+          recordBtn.textContent = "⏹️ Parar & Transcrever";
+          recordBtn.className = "main-btn active";
+          recordBtn.disabled = false;
+          statusEl.className = "status rec";
+          statusEl.textContent = "🎙️ Gravando... Fale agora.";
+          break;
+        case 'transcribing':
+          recordBtn.textContent = "⏳ Processando áudio...";
+          recordBtn.className = "main-btn idle";
+          recordBtn.disabled = true;
+          statusEl.classList.remove("rec");
+          statusEl.textContent = "⏳ Transcrevendo com Parakeet V3 (pode levar alguns segundos)...";
+          break;
+      }
+    }
+
+    function toggleRecording() {
+      if (!serverOnline) {
+        alert("Servidor offline. Clique em 🔌 Testar e garanta que 'python server.py' está rodando.");
+        return;
+      }
+      if (appState === 'recording') stopRecording();
+      else if (appState === 'idle')  startRecording();
+    }
+
+    // === RECORDING ===
+    async function startRecording() {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream, { mimeType });
+        audioChunks = [];
+        mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunks.push(e.data); };
+        mediaRecorder.onerror = (e) => { console.error(e); showError("❌ Erro interno do gravador."); };
+        mediaRecorder.onstop = async () => {
+          setState('transcribing');
+          if (audioChunks.length === 0) { showError("⚠️ Nenhum áudio capturado."); return; }
+          const blob = new Blob(audioChunks, { type: mimeType });
+          await transcribeBlob(blob, "dictation.webm");
+          // volta ao estado inicial
+          if (serverOnline) { statusEl.className = "status ok"; statusEl.textContent = "✅ Pronto."; }
+          setState('idle');
+        };
+        mediaRecorder.start(100);
+        setState('recording');
+      } catch (err) {
+        console.error("[Audio] Falha:", err);
+        showError("❌ Microfone bloqueado ou indisponível.");
+      }
+    }
+
+    function stopRecording() {
+      if (mediaRecorder && appState === 'recording' && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+      }
+    }
+
+    function showError(msg) {
+      statusEl.textContent = msg;
+      setState('idle');
+    }
+
+    // === FILE UPLOAD ===
+    fileInput.addEventListener("change", async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      if (!serverOnline) { alert("Servidor offline."); return; }
+      setState('transcribing');
+      try {
+        await transcribeBlob(file, file.name);
+        if (serverOnline) { statusEl.className = "status ok"; statusEl.textContent = "✅ Arquivo transcrito."; }
+      } catch (err) {
+        showError(`❌ ${err.message}`);
+      } finally {
+        fileInput.value = ""; // permite re-selecionar o mesmo arquivo
+        setState('idle');
+      }
+    });
+
+    // === TRANSCRIBE (envia blob ao backend) ===
+    async function transcribeBlob(blob, filename) {
+      const form = new FormData();
+      form.append("audio", blob, filename);
+      const r = await fetch(SERVER_URL + TRANSCRIBE_PATH, { method: "POST", body: form });
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({ detail: `HTTP ${r.status}` }));
+        throw new Error(err.detail || `HTTP ${r.status}`);
+      }
+      const data = await r.json();
+      const text = (data.text || "").trim();
+      if (!text) { statusEl.textContent = "⚠️ Transcrição vazia (áudio sem fala?)."; return; }
+      if (outputEl.value) outputEl.value += " ";
+      outputEl.value += text;
+      statusEl.textContent = "✅ Texto inserido com sucesso.";
+    }
+
+    // === UTILS ===
+    function clearOutput() { outputEl.value = ""; statusEl.textContent = "🧹 Limpo."; }
+    async function copyToClipboard() {
+      try {
+        await navigator.clipboard.writeText(outputEl.value);
+        statusEl.textContent = "📋 Copiado.";
+        setTimeout(() => { if (serverOnline) { statusEl.className = "status ok"; statusEl.textContent = "✅ Pronto."; } }, 1200);
+      } catch { alert("Falha ao copiar."); }
+    }
+    function downloadTxt() {
+      const blob = new Blob([outputEl.value], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `transcricao-${new Date().toISOString().slice(0,19).replace(/[:T]/g,"-")}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+      statusEl.textContent = "💾 Baixado.";
+    }
+
+    // === HOTKEY ===
+    document.addEventListener("keydown", (e) => {
+      if (e.ctrlKey && e.shiftKey && e.code === "Space") {
+        e.preventDefault();
+        toggleRecording();
+      }
+    });
+
+    // === BOOT ===
+    checkServer();
+  </script>
+</body>
+</html>

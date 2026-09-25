@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Ambientes virtuais
+.venv/
+venv/
+ENV/
+env/
+
+# Arquivos de áudio temporários ou de teste
+*.wav
+*.webm
+*.mp3
+*.ogg
+*.m4a
+*.flac
+
+# Modelos ou caches pesados locais (se baixados no diretório)
+*.onnx
+*.bin
+models/
+
+# Configurações locais e variáveis de ambiente
+.env
+.env.*
+!.env.example
+
+# IDEs e Sistema Operacional
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
