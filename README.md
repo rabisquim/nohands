@@ -70,10 +70,12 @@ A primeira execução baixa o modelo Parakeet V3 do HuggingFace (~600 MB int8 / 
 | Ação | Como |
 |------|------|
 | Gravar voz | Clique em **🎙️ Iniciar Gravação** ou `Ctrl+Shift+Espaço` |
+| Visualizador de áudio (VU Meter) | Barras dinâmicas oscilam em tempo real durante a gravação indicando a captação do microfone |
 | Transcrever arquivo | Clique em **📁 Transcrever arquivo de áudio** (mp3, m4a, ogg, wav, webm…) |
 | Copiar texto | **📋 Copiar** |
 | Baixar .txt | **💾 Baixar .txt** |
-| Limpar | **🗑️ Limpar** |
+| Limpar editor | **🗑️ Limpar** |
+| Histórico de transcrições | Painel retrátil abaixo do editor com as últimas 50 gravações salvas localmente no navegador (ações: Copiar, Inserir no editor, Excluir item ou Limpar Tudo) |
 
 O modelo Parakeet V3 já devolve **pontuação e capitalização automáticas**, então
 o texto sai pronto pra colar em qualquer lugar.
