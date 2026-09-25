@@ -25,6 +25,7 @@ import onnx_asr
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 # === CONFIGURAÇÃO ===
 HOST = os.environ.get("HOST", "127.0.0.1")
@@ -175,6 +176,11 @@ async def transcribe(audio: UploadFile = File(...)) -> JSONResponse:
                 p.unlink()
             except OSError:
                 pass
+
+
+FRONTEND_DIR = Path(__file__).resolve().parent / "frontend"
+if FRONTEND_DIR.is_dir():
+    app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")
 
 
 def main() -> None:
