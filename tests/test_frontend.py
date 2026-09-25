@@ -26,6 +26,14 @@ class TestFrontendStructure(unittest.TestCase):
         self.assertIn('deleteHistoryEntry', self.content, "Função deleteHistoryEntry deve existir")
         self.assertIn('clearAllHistory', self.content, "Função clearAllHistory deve existir")
 
+    def test_studio_pro_elements_present(self):
+        """Verifica se os novos elementos do design Studio Pro estão presentes."""
+        self.assertIn('id="toastContainer"', self.content, "Container de toasts deve existir")
+        self.assertIn('id="wordCharCount"', self.content, "Contador de palavras/caracteres deve existir")
+        self.assertIn('id="settingsPopover"', self.content, "Popover de conexão deve existir")
+        self.assertIn('id="settingsBtn"', self.content, "Botão acionador de configurações deve existir")
+        self.assertIn('showToast', self.content, "Função showToast deve existir")
+
 
 if __name__ == "__main__":
     unittest.main()
